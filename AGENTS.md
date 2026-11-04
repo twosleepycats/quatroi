@@ -30,4 +30,4 @@ Use concise imperative commit subjects, such as `Fix impact frame timing`. Pull 
 
 ## Assets & Configuration
 
-Keep runtime assets inside the repository and embedded in the executable. Preserve atlas frame ordering. Do not commit secrets, generated executables, or test previews. Record revised art prompts in `art/README.md`.
+Keep runtime assets inside the repository and embedded in the executable. `src/Weapon.cs` defines the three weapon profiles, grip pivots, impact offsets, and synthesized sounds. Preserve atlas frame ordering. Do not commit secrets, generated executables, or test previews. Record revised art prompts in `art/README.md` or `art/weapons.md`.

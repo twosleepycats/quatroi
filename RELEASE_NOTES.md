@@ -1,4 +1,14 @@
-# Quất Roi v1.0.0
+# Quất Roi v1.1.0
+
+## Điểm mới
+
+- Thêm **Kiếm**: animation vung kiếm, vệt chém xanh và âm thanh vút.
+- Thêm **Búa**: animation gõ búa, bụi/tia va chạm vàng và âm thanh gõ.
+- Chuột phải icon app trong khay hệ thống → **Vũ khí → Roi / Kiếm / Búa**. Món đang dùng có dấu chọn; đổi được cả khi đang hiện hoặc ẩn.
+- Cho phép click chọn menu khi vũ khí đang bật, không bị mouse hook giữ lại.
+- Giữ Ctrl+Shift+Home để hiện, Esc để ẩn, hỗ trợ nhiều màn hình và chỉ chạy một app.
+
+Các vũ khí mới có sprite nhúng trong exe; tiếng kiếm và búa được tổng hợp trực tiếp, không cần tải thêm tài nguyên. Lựa chọn trở về Roi khi khởi động lại.
 
 Đồ chơi desktop Windows: roi hoạt hình bám con trỏ, hiệu ứng tiếp xúc và tiếng quất vui vẻ cho team.
 

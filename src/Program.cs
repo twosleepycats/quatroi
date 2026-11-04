@@ -42,6 +42,24 @@ namespace QuatRoi
             {
                 if (args.Length > 0 && args[0] == "--self-test")
                 {
+                    var weaponSet = Weapon.LoadAll();
+                    try
+                    {
+                        using (var weaponPreview = new Bitmap(960, 960))
+                        using (var graphics = Graphics.FromImage(weaponPreview))
+                        {
+                            graphics.Clear(Color.FromArgb(32, 36, 44));
+                            for (int i = 0; i < weaponSet.Length; i++)
+                            {
+                                var weapon = weaponSet[i];
+                                if (weapon.Atlas.Width != weapon.Atlas.Height || weapon.Atlas.GetPixel(0, 0).A > 8)
+                                    throw new Exception("Invalid weapon atlas: " + weapon.Name);
+                                DrawWeaponPreview(graphics, weapon.Atlas, i * 320);
+                            }
+                            weaponPreview.Save("art/weapons-preview.png");
+                        }
+                    }
+                    finally { foreach (var weapon in weaponSet) weapon.Dispose(); }
                     if (atlas.Width != atlas.Height || atlas.Width < 64) throw new Exception("Invalid atlas grid");
                     if (atlas.GetPixel(0, 0).A > 8) throw new Exception("Atlas background must be transparent");
                     using (var player = new SoundPlayer(Assembly.GetExecutingAssembly().GetManifestResourceStream("whip-crack.wav"))) player.Load();
@@ -67,17 +85,28 @@ namespace QuatRoi
                     }
                     return;
                 }
-                Application.Run(new Overlay(atlas, args.Length > 0 && args[0] == "--smoke"));
+                Application.Run(new Overlay(args.Length > 0 && args[0] == "--smoke"));
             }
         }
 
         [DllImport("user32.dll")] private static extern bool SetProcessDpiAwarenessContext(IntPtr context);
         [DllImport("user32.dll")] private static extern bool SetProcessDPIAware();
+
+        private static void DrawWeaponPreview(Graphics graphics, Bitmap image, int y)
+        {
+            Overlay.DrawFrame(graphics, image, 0, new Rectangle(10, y + 10, 300, 300));
+            Overlay.DrawFrame(graphics, image, 5, new Rectangle(330, y + 10, 300, 300));
+            Overlay.DrawFrame(graphics, image, 11, new Rectangle(650, y + 10, 300, 300));
+        }
     }
 
     internal sealed class Overlay : Form
     {
-        private readonly Bitmap atlas;
+        private readonly Weapon[] weapons = Weapon.LoadAll();
+        private readonly ToolStripMenuItem[] weaponItems = new ToolStripMenuItem[3];
+        private int weaponIndex;
+        private Weapon Selected { get { return weapons[weaponIndex]; } }
+        private Bitmap atlas { get { return Selected.Atlas; } }
         private readonly System.Windows.Forms.Timer timer = new System.Windows.Forms.Timer { Interval = 16 };
         private readonly Stopwatch clock = Stopwatch.StartNew();
         private readonly NotifyIcon tray;
@@ -95,13 +124,12 @@ namespace QuatRoi
         private readonly bool smoke;
         private Point lastCursor = new Point(int.MinValue, int.MinValue);
         private readonly Bitmap surface = new Bitmap(520, 520, PixelFormat.Format32bppPArgb);
-        private readonly SoundPlayer sound = new SoundPlayer(Assembly.GetExecutingAssembly().GetManifestResourceStream("whip-crack.wav"));
+        private SoundPlayer sound { get { return Selected.Sound; } }
         private bool sounded;
         private bool muted;
 
-        public Overlay(Bitmap image, bool smokeTest)
+        public Overlay(bool smokeTest)
         {
-            atlas = image;
             smoke = smokeTest;
             FormBorderStyle = FormBorderStyle.None;
             AutoScaleMode = AutoScaleMode.None;
@@ -115,8 +143,17 @@ namespace QuatRoi
             Icon = appIcon;
             Text = "Quat Roi";
             var menu = new ContextMenuStrip();
-            toggle = new ToolStripMenuItem("Hien roi (Ctrl+Shift+Home)", null, delegate { Toggle(); });
+            toggle = new ToolStripMenuItem("Hien vu khi (Ctrl+Shift+Home)", null, delegate { Toggle(); });
             menu.Items.Add(toggle);
+            var weaponMenu = new ToolStripMenuItem("Vũ khí");
+            for (int i = 0; i < weapons.Length; i++)
+            {
+                int index = i;
+                weaponItems[i] = new ToolStripMenuItem(weapons[i].Name, null, delegate { SelectWeapon(index); });
+                weaponItems[i].Checked = i == weaponIndex;
+                weaponMenu.DropDownItems.Add(weaponItems[i]);
+            }
+            menu.Items.Add(weaponMenu);
             var muteItem = new ToolStripMenuItem("Tat am thanh") { CheckOnClick = true };
             muteItem.CheckedChanged += delegate { muted = muteItem.Checked; if (muted) sound.Stop(); };
             menu.Items.Add(muteItem);
@@ -148,7 +185,16 @@ namespace QuatRoi
                     if (!muted) sound.Play();
                 }
                 lastCursor = current;
-                if (smoke && clock.ElapsedMilliseconds > 1200) Close();
+                if (smoke)
+                {
+                    int nextWeapon = Math.Min(2, (int)(clock.ElapsedMilliseconds / 700));
+                    if (nextWeapon != weaponIndex)
+                    {
+                        SelectWeapon(nextWeapon);
+                        StartSwing(Cursor.Position);
+                    }
+                    if (clock.ElapsedMilliseconds > 2200) Close();
+                }
             };
             DisplaySettingsChangedHandler = delegate { RenderLayer(); };
             Microsoft.Win32.SystemEvents.DisplaySettingsChanged += DisplaySettingsChangedHandler;
@@ -184,9 +230,7 @@ namespace QuatRoi
             {
                 muted = true;
                 SetActive(true);
-                swinging = true;
-                swingStart = clock.ElapsedMilliseconds;
-                target = new Point(Cursor.Position.X - 168, Cursor.Position.Y - 12);
+                StartSwing(Cursor.Position);
             }
             RenderLayer();
             if (!smoke) tray.ShowBalloonTip(4000, "Quat Roi", "Ctrl+Shift+Home: hien roi. Esc: an roi. Thoat hoan toan bang menu khay he thong.", ToolTipIcon.Info);
@@ -207,6 +251,29 @@ namespace QuatRoi
             SetActive(!active);
         }
 
+        private void SelectWeapon(int index)
+        {
+            sound.Stop();
+            swinging = false;
+            weaponIndex = index;
+            for (int i = 0; i < weaponItems.Length; i++) weaponItems[i].Checked = i == index;
+            UpdateTrayText();
+            RenderLayer();
+        }
+
+        private void UpdateTrayText()
+        {
+            tray.Text = "Quat Roi - " + Selected.Name + (active ? " | Esc: an" : " | Ctrl+Shift+Home: hien");
+        }
+
+        private void StartSwing(Point position)
+        {
+            target = new Point(position.X + Selected.ImpactOffset.X, position.Y + Selected.ImpactOffset.Y);
+            swingStart = clock.ElapsedMilliseconds;
+            swinging = true;
+            sounded = false;
+        }
+
         private static bool ShowShortcutPressed()
         {
             return (GetAsyncKeyState(0x11) & 0x8000) != 0
@@ -220,8 +287,8 @@ namespace QuatRoi
             active = value;
             swinging = false;
             sound.Stop();
-            toggle.Text = active ? "An roi (Esc)" : "Hien roi (Ctrl+Shift+Home)";
-            tray.Text = active ? "Quat Roi - DANG BAT | Esc: an roi" : "Quat Roi - DANG AN | Ctrl+Shift+Home: hien";
+            toggle.Text = active ? "An vu khi (Esc)" : "Hien vu khi (Ctrl+Shift+Home)";
+            UpdateTrayText();
             RenderLayer();
         }
 
@@ -237,13 +304,10 @@ namespace QuatRoi
                     return (IntPtr)1;
                 }
                 var mouse = (MouseInfo)Marshal.PtrToStructure(data, typeof(MouseInfo));
-                if (active && msg == 0x0201)
+                if (active && msg == 0x0201 && !tray.ContextMenuStrip.Visible)
                 {
                     swallowingClick = true;
-                    target = new Point(mouse.Position.X - 168, mouse.Position.Y - 12);
-                    swingStart = clock.ElapsedMilliseconds;
-                    swinging = true;
-                    sounded = false;
+                    StartSwing(mouse.Position);
                     return (IntPtr)1;
                 }
             }
@@ -263,7 +327,7 @@ namespace QuatRoi
                     Point cursor = new Point(300, 250);
                     int elapsed = (int)(clock.ElapsedMilliseconds - swingStart);
                     int frame = swinging ? Math.Min(7, elapsed / 70) : 0;
-                    DrawFrame(g, atlas, frame, WhipBounds(cursor, 230));
+                    DrawFrame(g, atlas, frame, Selected.Bounds(cursor, 230));
                     if (swinging && elapsed >= 280)
                     {
                         int impact = Math.Min(7, (elapsed - 280) / 35);
@@ -305,8 +369,7 @@ namespace QuatRoi
                 if (hook != IntPtr.Zero) { UnhookWindowsHookEx(hook); hook = IntPtr.Zero; }
                 Microsoft.Win32.SystemEvents.DisplaySettingsChanged -= DisplaySettingsChangedHandler;
                 timer.Dispose();
-                sound.Stop();
-                sound.Dispose();
+                foreach (var weapon in weapons) weapon.Dispose();
                 surface.Dispose();
                 tray.Visible = false;
                 var menu = tray.ContextMenuStrip;

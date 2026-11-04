@@ -17,6 +17,7 @@ App chỉ chạy một bản trong mỗi phiên Windows: mở exe thêm lần n�
 - `Esc`: ẩn roi, dừng animation và âm thanh, trả chuột về bình thường. App vẫn chạy để bật lại bằng phím tắt.
 - `F8`: phím bật/ẩn cũ vẫn được giữ.
 - Chuột phải biểu tượng khay hệ thống: tạm dừng, tắt âm thanh hoặc thoát. Có thể cần mở mục biểu tượng ẩn trên taskbar.
+- Chọn **Vũ khí → Roi / Kiếm / Búa** trong menu icon khay hệ thống. Dấu chọn thể hiện món đang dùng; có thể đổi khi đang hiện hoặc ẩn. Kiếm có vệt chém xanh và tiếng vút; búa có bụi va chạm vàng và tiếng gõ. Khi menu mở, click chọn menu không bị chặn. Lựa chọn trở về Roi khi mở lại app.
 
 Roi đi theo con trỏ trên tất cả màn hình, kể cả màn hình đặt bên trái hoặc phía trên màn hình chính. App dùng tọa độ pixel vật lý với nhận biết DPI từng màn hình; kích thước roi cố định 230 pixel. Hiệu ứng sát mép desktop có thể bị cắt để giữ tay cầm đúng vị trí con trỏ. Overlay dùng alpha từng pixel qua `UpdateLayeredWindow`, không dùng nền màu tím. Âm thanh WAV được nhúng vào exe và phát ở nhịp quất 280 ms. Nguồn CC0 và cách xử lý âm thanh nằm trong `assets/AUDIO-LICENSE.md`. Chưa đo mức dùng CPU/RAM thực tế.
 
@@ -28,7 +29,7 @@ Start-Process .\dist\QuatRoi.exe -ArgumentList '--self-test' -Wait
 Start-Process .\dist\QuatRoi.exe -ArgumentList '--smoke' -Wait
 ```
 
-Build dùng C# compiler đi kèm .NET Framework trên Windows, không tải NuGet. Self-test kiểm tra atlas và xuất `art/preview.png`. Smoke test mở overlay khoảng 1,2 giây rồi đóng, có đọc trạng thái phím và cài mouse hook trong thời gian đó. Các phím tắt vẫn có thể được ứng dụng đang mở nhận cùng lúc. Để thoát hẳn, chọn **Thoat hoan toan** trong menu khay hệ thống.
+Build dùng C# compiler đi kèm .NET Framework trên Windows, không tải NuGet. Self-test kiểm tra atlas, tải âm thanh của cả ba vũ khí và xuất `art/weapons-preview.png`. Smoke test đổi qua ba vũ khí trong khoảng 2,2 giây rồi đóng, có đọc trạng thái phím và cài mouse hook trong thời gian đó. Các phím tắt vẫn có thể được ứng dụng đang mở nhận cùng lúc. Để thoát hẳn, chọn **Thoat hoan toan** trong menu khay hệ thống.
 
 Kiểm tra thủ công: mở app và xác nhận roi đang ẩn; Ctrl+Shift+Home để hiện; click ở giữa màn hình, bốn mép và click liên tiếp; Esc để ẩn và dùng chuột bình thường; Ctrl+Shift+Home để hiện lại. Bấm lặp tổ hợp khi đang hiện phải giữ nguyên trạng thái. Thử F8 và menu khay hệ thống, cuối cùng chọn thoát hoàn toàn. Kiểm tra trên cấu hình nhiều màn hình và DPI khác nhau trước khi chia sẻ rộng.
 

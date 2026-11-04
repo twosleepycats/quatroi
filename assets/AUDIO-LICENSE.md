@@ -1,5 +1,7 @@
 # Whip crack audio
 
+Sword swish and hammer thump in v1.1.0 are original synthesized effects generated in `src/Weapon.cs`; no additional third-party audio is used for those weapons.
+
 - Title: Whip crack #1 (sound 2949)
 - Author: Joseph SARDIN
 - Source and license statement: https://bigsoundbank.com/whip-crack-1-s2949.html

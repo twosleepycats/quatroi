@@ -1,6 +1,7 @@
 dist/
 art/preview.png
 art/overlay-preview.png
+art/weapons-preview.png
 art/smoke-error.txt
 *.user
 *.log
